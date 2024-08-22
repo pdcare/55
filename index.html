@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생산 일정 모니터</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { width: 80%; margin: 0 auto; padding: 20px; }
+        .schedule { display: flex; justify-content: space-between; margin-top: 20px; }
+        .schedule > div { width: 48%; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .header { font-weight: bold; margin-bottom: 10px; }
+        .divider { width: 1px; background-color: #ddd; margin: 0 1px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>생산 일정 모니터</h1>
+        <div class="schedule">
+            <div id="electric">
+                <div class="header">전동차 생산 일정</div>
+                <table id="electric-table">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>TIME</th>
+                            <th>MODEL</th>
+                            <th>COLOR</th>
+                            <th>Q'y</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="divider"></div>
+            <div id="wheelchair">
+                <div class="header">휠체어 생산 일정</div>
+                <table id="wheelchair-table">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>TIME</th>
+                            <th>MODEL</th>
+                            <th>COLOR</th>
+                            <th>Q'y</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        function fetchSchedule() {
+            fetch('schedule.csv')
+                .then(response => response.text())
+                .then(data => {
+                    const rows = data.trim().split('\n');
+                    let electricHtml = '';
+                    let wheelchairHtml = '';
+                    const now = new Date();
+                    const today = now.toISOString().split('T')[0]; // 오늘 날짜
+                    const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // 현재 시간 (HH:MM)
+
+                    // 데이터 처리
+                    const electricData = [];
+                    const wheelchairData = [];
+
+                    rows.forEach((row, index) => {
+                        if (index === 0) return; // 첫 번째 줄은 헤더
+
+                        const columns = row.split(',');
+                        const date = columns[0].trim();
+                        const time = columns[1].trim();
+                        const model = columns[2].trim();
+                        const color = columns[3].trim();
+                        const qty = columns[4].trim();
+                        const dateTime = new Date(`${date}T${time}`);
+                        const formattedTime = time;
+
+                        if (date && date !== '날짜') {
+                            if (date === today) {
+                                if (formattedTime <= currentTime) {
+                                    // 오늘 일정 중 현재 시간 이전의 가장 최근 일정
+                                    if (model.startsWith('ND')) {
+                                        electricData.push({ date, time: formattedTime, model, color, qty });
+                                    } else if (model.startsWith('나래')) {
+                                        wheelchairData.push({ date, time: formattedTime, model, color, qty });
+                                    }
+                                }
+                            } else if (dateTime > now) {
+                                // 이후 일정 중 가장 이른 일정
+                                if (model.startsWith('ND')) {
+                                    electricData.push({ date, time: formattedTime, model, color, qty });
+                                } else if (model.startsWith('나래')) {
+                                    wheelchairData.push({ date, time: formattedTime, model, color, qty });
+                                }
+                            }
+                        }
+                    });
+
+                    // 테이블 HTML 생성
+                    if (electricData.length > 0) {
+                        const electricItem = electricData[0];
+                        electricHtml = `<tr><td>${electricItem.date}</td><td>${electricItem.time}</td><td>${electricItem.model}</td><td>${electricItem.color}</td><td>${electricItem.qty}</td></tr>`;
+                    }
+
+                    if (wheelchairData.length > 0) {
+                        const wheelchairItem = wheelchairData[0];
+                        wheelchairHtml = `<tr><td>${wheelchairItem.date}</td><td>${wheelchairItem.time}</td><td>${wheelchairItem.model}</td><td>${wheelchairItem.color}</td><td>${wheelchairItem.qty}</td></tr>`;
+                    }
+
+                    // HTML 업데이트
+                    document.querySelector('#electric-table tbody').innerHTML = electricHtml;
+                    document.querySelector('#wheelchair-table tbody').innerHTML = wheelchairHtml;
+                })
+                .catch(error => console.error('CSV 파일을 가져오는 중 오류가 발생했습니다:', error));
+        }
+
+        // 페이지가 로드된 후 일정 가져오기
+        window.onload = function() {
+            fetchSchedule();
+            setInterval(fetchSchedule, 60000); // 1분마다 일정 갱신
+        };
+    </script>
+</body>
+</html>
+
