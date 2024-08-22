@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spreadsheet Data Display</title>
+    <style>
+        #data-container {
+            font-size: 18px;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #content {
+            font-size: 24px;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="data-container">Loading data...</div>
+    <div id="content">
+        <div class="screen active" id="screen1">Screen 1 Content</div>
+        <div class="screen" id="screen2">Screen 2 Content</div>
+        <div class="screen" id="screen3">Screen 3 Content</div>
+    </div>
+
+    <script>
+        // 구글 스프레드시트 데이터 가져오기
+        function fetchData() {
+            fetch('YOUR_WEB_APP_URL') // 구글 앱스 스크립트에서 제공된 웹 앱 URL
+                .then(response => response.json())
+                .then(data => {
+                    // 데이터를 HTML로 변환하여 표시
+                    const dataContainer = document.getElementById('data-container');
+                    dataContainer.innerHTML = data.map(row => row.join(', ')).join('<br>');
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('data-container').innerHTML = 'Error fetching data';
+                });
+        }
+
+        // 페이지 로드 시 데이터 가져오기
+        fetchData();
+
+        // 10초마다 데이터 새로 고침
+        setInterval(fetchData, 10000);
+
+        // 5초마다 화면 변경
+        var currentScreen = 0;
+        var screens = document.querySelectorAll('.screen');
+        
+        function changeScreen() {
+            screens.forEach((screen, index) => {
+                screen.classList.toggle('active', index === currentScreen);
+            });
+            currentScreen = (currentScreen + 1) % screens.length;
+        }
+
+        setInterval(changeScreen, 5000);
+
+        // 초기 화면 및 데이터 표시
+        changeScreen();
+    </script>
+</body>
+</html>
